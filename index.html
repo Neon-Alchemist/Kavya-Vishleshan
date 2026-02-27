@@ -343,7 +343,7 @@ footer{text-align:center;padding:32px 20px;color:var(--ink3);font-size:0.78rem;b
 <footer>🪔 काव्य-विश्लेषक &nbsp;·&nbsp; Hindi &amp; Marathi Poem Analyzer &nbsp;·&nbsp; Powered by Google Gemini</footer>
 
 <script>
-const API_KEY = 'AIzaSyCxYFx_TaxK1CGOcu7upnaXHCT35Tblgis';
+
 const MAX_RECENTS = 10;
 let currentResult = null;
 
@@ -541,6 +541,7 @@ function saveToRecents(r, poemText) {
   if (recents.length > MAX_RECENTS) recents = recents.slice(0, MAX_RECENTS);
   localStorage.setItem('kavya_recents', JSON.stringify(recents));
   renderRecents();
+
 }
 
 function renderRecents() {
@@ -605,7 +606,7 @@ async function analyze() {
   btn.innerHTML = '<span class="spinner"></span> विश्लेषण हो रहा है...';
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
+      `https://kavya-api.amanchougule1381.workers.dev`,
       { method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ contents:[{parts:[{text:PROMPT+'\n\nPoem:\n\n'+poem}]}], generationConfig:{temperature:0.2,maxOutputTokens:8192}, tools:[{googleSearch:{}}] }) }
     );
