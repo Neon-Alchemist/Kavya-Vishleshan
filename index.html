@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="hi" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>काव्य-विश्लेषक — Hindi & Marathi Poem Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Tiro+Devanagari+Hindi&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+/* ── THEME VARIABLES ── */
+[data-theme="light"]{
+  --bg:#FDF6E9;
+  --surface:#FFFFFF;
+  --surface2:#FFFBF0;
+  --border:rgba(200,134,10,0.2);
+  --border2:rgba(200,134,10,0.35);
+  --ink:#1C0A00;
+  --ink2:rgba(28,10,0,0.55);
+  --ink3:rgba(28,10,0,0.35);
+  --saffron:#E8500A;
+  --saffron2:#c43d06;
+  --gold:#C8860A;
+  --cream:#F5E6C8;
+  --shadow:rgba(28,10,0,0.12);
+  --shadow2:rgba(28,10,0,0.06);
+  --card-bg:linear-gradient(135deg,#fffbf0,#fff8e8);
+  --drawer-bg:#FDF6E9;
+  --drawer-head:linear-gradient(135deg,#fffbf0,#fff8e8);
+  --topbar-bg:rgba(253,246,233,0.92);
+  --correct:#27ae60;
+}
+[data-theme="dark"]{
+  --bg:#0f0a05;
+  --surface:#1a1208;
+  --surface2:#221a0a;
+  --border:rgba(200,134,10,0.18);
+  --border2:rgba(200,134,10,0.3);
+  --ink:#f0dfc0;
+  --ink2:rgba(240,223,192,0.6);
+  --ink3:rgba(240,223,192,0.35);
+  --saffron:#ff6b1a;
+  --saffron2:#e8500a;
+  --gold:#d4960f;
+  --cream:#2a1f0a;
+  --shadow:rgba(0,0,0,0.5);
+  --shadow2:rgba(0,0,0,0.3);
+  --card-bg:linear-gradient(135deg,#1f1508,#1a1208);
+  --drawer-bg:#120e06;
+  --drawer-head:linear-gradient(135deg,#1f1508,#1a1208);
+  --topbar-bg:rgba(15,10,5,0.95);
+  --correct:#2ecc71;
+}
+
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:'Tiro Devanagari Hindi','Georgia',serif;min-height:100vh;overflow-x:hidden;transition:background 0.3s,color 0.3s;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9998;opacity:1;}
+
+/* ── TOP NAV BAR ── */
+.topbar{position:fixed;top:0;left:0;right:0;height:56px;background:var(--topbar-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border);z-index:300;display:flex;align-items:center;padding:0 20px;gap:12px;}
+.topbar-left{display:flex;align-items:center;gap:10px;flex:1;}
+.recents-trigger{background:none;border:1px solid var(--border2);border-radius:8px;padding:7px 14px;cursor:pointer;font-family:'Inter',sans-serif;font-size:0.82rem;font-weight:600;color:var(--gold);display:flex;align-items:center;gap:7px;transition:all 0.2s;}
+.recents-trigger:hover{background:var(--surface2);border-color:var(--saffron);color:var(--saffron);}
+.recents-count{background:var(--saffron);color:white;border-radius:10px;padding:1px 7px;font-size:0.7rem;}
+.topbar-brand{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--gold);letter-spacing:1px;display:none;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.icon-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:7px 12px;cursor:pointer;color:var(--ink2);font-size:0.82rem;font-family:'Inter',sans-serif;font-weight:500;display:flex;align-items:center;gap:6px;transition:all 0.2s;white-space:nowrap;}
+.icon-btn:hover{border-color:var(--saffron);color:var(--saffron);background:var(--surface2);}
+.icon-btn.active{background:var(--saffron);border-color:var(--saffron);color:white;}
+
+/* ── DRAWER ── */
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:400;opacity:0;pointer-events:none;transition:opacity 0.3s;}
+.drawer-overlay.open{opacity:1;pointer-events:all;}
+.drawer{position:fixed;top:0;left:0;height:100%;width:340px;max-width:90vw;background:var(--drawer-bg);z-index:500;transform:translateX(-100%);transition:transform 0.35s cubic-bezier(.4,0,.2,1);box-shadow:12px 0 50px rgba(0,0,0,0.25);display:flex;flex-direction:column;}
+.drawer.open{transform:translateX(0);}
+.drawer-head{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--drawer-head);}
+.drawer-title{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--gold);display:flex;align-items:center;gap:8px;}
+.drawer-back{background:none;border:1px solid var(--border2);border-radius:8px;cursor:pointer;color:var(--saffron);font-size:0.85rem;font-family:'Inter',sans-serif;font-weight:600;display:flex;align-items:center;gap:5px;padding:6px 12px;transition:all 0.2s;}
+.drawer-back:hover{background:var(--saffron);color:white;border-color:var(--saffron);}
+.drawer-actions{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:flex-end;}
+.clear-btn{font-size:0.78rem;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:6px;padding:5px 12px;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;}
+.clear-btn:hover{color:var(--saffron);border-color:var(--saffron);}
+.drawer-list{flex:1;overflow-y:auto;padding:12px;}
+.recent-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.recent-item:hover{border-color:var(--saffron);transform:translateX(4px);box-shadow:0 4px 16px var(--shadow);}
+.recent-info{flex:1;min-width:0;}
+.recent-title{font-family:'Playfair Display',serif;font-size:0.93rem;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.recent-meta{font-size:0.73rem;color:var(--ink3);margin-top:3px;font-family:'Inter',sans-serif;}
+.recent-badge{font-size:0.62rem;padding:2px 7px;border-radius:4px;flex-shrink:0;font-family:'Inter',sans-serif;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;}
+.recent-arrow{color:var(--gold);font-size:1.1rem;flex-shrink:0;}
+.no-recents{text-align:center;padding:40px 16px;color:var(--ink3);font-size:0.88rem;font-style:italic;}
+
+/* ── MAIN LAYOUT ── */
+header{text-align:center;padding:90px 20px 50px;}
+.header-ornament{font-size:2.8rem;display:block;margin-bottom:14px;animation:float 3s ease-in-out infinite;filter:drop-shadow(0 4px 12px rgba(232,80,10,0.3));}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+h1{font-family:'Playfair Display',serif;font-size:clamp(2.4rem,6vw,4.2rem);font-weight:900;color:var(--ink);letter-spacing:1px;line-height:1.1;margin-bottom:8px;}
+h1 em{color:var(--saffron);font-style:normal;}
+.tagline{font-size:0.85rem;color:var(--gold);letter-spacing:4px;text-transform:uppercase;margin-bottom:32px;font-family:'Inter',sans-serif;font-weight:500;}
+.header-divider{display:flex;align-items:center;gap:16px;max-width:360px;margin:0 auto;}
+.header-divider::before,.header-divider::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+.header-divider span{color:var(--gold);font-size:0.9rem;}
+main{max-width:840px;margin:0 auto;padding:0 20px 100px;}
+
+/* ── INPUT CARD ── */
+.input-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;margin-bottom:24px;box-shadow:0 8px 40px var(--shadow),0 1px 0 var(--border2) inset;}
+.input-label{display:block;font-family:'Inter',sans-serif;font-size:0.82rem;font-weight:600;color:var(--gold);margin-bottom:12px;letter-spacing:2px;text-transform:uppercase;}
+textarea{width:100%;min-height:180px;border:1px solid var(--border2);border-radius:10px;padding:16px;font-family:'Tiro Devanagari Hindi','Georgia',serif;font-size:1.05rem;line-height:1.9;color:var(--ink);background:var(--surface2);resize:vertical;outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
+textarea:focus{border-color:var(--saffron);box-shadow:0 0 0 3px rgba(232,80,10,0.1);}
+textarea::placeholder{color:var(--ink3);font-style:italic;}
+.btn-row{display:flex;gap:10px;margin-top:16px;align-items:stretch;flex-wrap:wrap;}
+.btn-analyze{flex:1;min-width:200px;padding:15px 20px;background:var(--saffron);border:none;border-radius:10px;color:white;font-family:'Inter',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:0.5px;transition:all 0.2s;box-shadow:0 4px 0 var(--saffron2),0 8px 24px rgba(232,80,10,0.3);position:relative;top:0;}
+.btn-analyze:hover{top:-2px;box-shadow:0 6px 0 var(--saffron2),0 12px 30px rgba(232,80,10,0.4);}
+.btn-analyze:active{top:2px;box-shadow:0 2px 0 var(--saffron2);}
+.btn-analyze:disabled{background:#aaa;box-shadow:none;cursor:not-allowed;top:0;}
+.btn-refresh{display:none;align-items:center;gap:7px;padding:13px 18px;background:var(--surface2);border:1.5px solid var(--saffron);border-radius:10px;color:var(--saffron);font-family:'Inter',sans-serif;font-size:0.9rem;font-weight:700;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.btn-refresh:hover{background:var(--saffron);color:white;}
+
+/* ── RESULT TOOLBAR ── */
+.result-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.result-toolbar-title{font-family:'Playfair Display',serif;font-size:1rem;color:var(--ink2);flex:1;}
+.tool-btn{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 13px;cursor:pointer;color:var(--ink2);font-size:0.8rem;font-family:'Inter',sans-serif;font-weight:600;display:flex;align-items:center;gap:6px;transition:all 0.2s;}
+.tool-btn:hover{border-color:var(--saffron);color:var(--saffron);background:var(--surface2);}
+.tool-btn.copied{background:var(--correct);border-color:var(--correct);color:white;}
+
+/* ── POEM INFO CARD ── */
+.poem-card{background:var(--card-bg);border:1px solid var(--border2);border-radius:14px;padding:24px 28px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;box-shadow:0 4px 24px var(--shadow2);}
+.poem-info{flex:1;min-width:150px;}
+.info-label{font-size:0.68rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold);margin-bottom:5px;font-family:'Inter',sans-serif;font-weight:600;}
+.info-value{font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:700;color:var(--ink);}
+.info-value.sm{font-size:0.95rem;font-weight:400;}
+.badge{display:inline-block;border-radius:5px;padding:4px 12px;font-size:0.72rem;letter-spacing:1px;text-transform:uppercase;font-family:'Inter',sans-serif;font-weight:700;}
+.badge-hindi{background:rgba(232,80,10,0.12);border:1px solid var(--saffron);color:var(--saffron);}
+.badge-marathi{background:rgba(200,134,10,0.12);border:1px solid var(--gold);color:var(--gold);}
+.badge-mood{background:var(--surface2);border:1px solid var(--border2);color:var(--ink2);font-size:0.7rem;}
+
+/* ── POET BIO CARD ── */
+.bio-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:20px;display:flex;gap:20px;align-items:flex-start;box-shadow:0 4px 24px var(--shadow2);}
+.bio-photo{width:140px;height:140px;border-radius:10px;object-fit:cover;object-position:top;border:3px solid var(--border2);flex-shrink:0;background:var(--surface2);}
+.bio-photo-placeholder{width:140px;height:140px;border-radius:10px;background:var(--surface2);border:2px dashed var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:2.8rem;}
+.bio-content{flex:1;}
+.bio-name{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--ink);margin-bottom:6px;}
+.bio-text{font-size:0.9rem;line-height:1.8;color:var(--ink2);font-family:'Inter',sans-serif;}
+
+/* ── TABS ── */
+.tabs-wrap{border-radius:14px 14px 0 0;overflow:hidden;}
+.tabs{display:flex;border-bottom:2px solid var(--border);background:var(--surface2);overflow-x:auto;}
+.tab{padding:13px 20px;border:none;background:none;font-family:'Inter',sans-serif;font-size:0.85rem;font-weight:500;color:var(--ink2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:all 0.2s;}
+.tab:hover{color:var(--saffron);}
+.tab.active{color:var(--saffron);border-bottom-color:var(--saffron);font-weight:700;background:var(--surface);}
+.tab-content{background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 14px 14px;padding:28px;box-shadow:0 8px 30px var(--shadow2);margin-bottom:24px;}
+.panel{display:none;}.panel.active{display:block;}
+.panel-title{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--gold);margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.panel p{line-height:2;color:var(--ink);font-size:1rem;}
+.themes{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;}
+.theme{background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:5px 14px;font-size:0.83rem;color:var(--gold);font-family:'Inter',sans-serif;}
+.message-block{border-left:3px solid var(--saffron);padding:18px 22px;background:var(--surface2);border-radius:0 10px 10px 0;margin-top:8px;}
+.device{padding:14px 18px;margin-bottom:10px;background:var(--surface2);border-radius:8px;line-height:1.8;font-size:0.95rem;}
+.device:nth-child(odd){border-left:3px solid var(--saffron);}
+.device:nth-child(even){border-left:3px solid var(--gold);}
+.question{background:var(--surface2);border-radius:10px;padding:18px;margin-bottom:12px;border:1px solid var(--border);}
+.q-head{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;}
+.qtype{border-radius:5px;padding:3px 10px;font-size:0.65rem;letter-spacing:1px;white-space:nowrap;text-transform:uppercase;flex-shrink:0;margin-top:2px;font-family:'Inter',sans-serif;font-weight:700;}
+.qtype-sa{background:rgba(200,134,10,0.12);border:1px solid var(--gold);color:var(--gold);}
+.qtype-la{background:rgba(232,80,10,0.1);border:1px solid var(--saffron);color:var(--saffron);}
+.qtype-mcq{background:rgba(39,174,96,0.1);border:1px solid var(--correct);color:var(--correct);}
+.qtext{font-weight:700;line-height:1.6;font-size:0.95rem;}
+.options{margin:10px 0 10px 16px;}
+.option{padding:4px 0;color:var(--ink2);font-size:0.9rem;font-family:'Inter',sans-serif;}
+.option.correct{color:var(--correct);font-weight:700;}
+.hint{background:var(--bg);border-radius:7px;padding:10px 14px;font-size:0.82rem;color:var(--gold);border:1px solid var(--border);margin-top:8px;font-family:'Inter',sans-serif;}
+
+/* ── ERROR ── */
+.error{background:rgba(192,57,43,0.08);border:1px solid rgba(192,57,43,0.3);border-left:4px solid #c0392b;border-radius:10px;padding:14px 18px;margin-bottom:20px;color:#c0392b;font-size:0.88rem;display:none;word-break:break-all;font-family:'Inter',sans-serif;}
+
+/* ── SPINNER ── */
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.4);border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:8px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── FOOTER ── */
+footer{text-align:center;padding:32px 20px;color:var(--ink3);font-size:0.78rem;border-top:1px solid var(--border);font-family:'Inter',sans-serif;}
+
+/* ── PRINT STYLES ── */
+@media print{
+  .topbar,.drawer,.drawer-overlay,.btn-row,.result-toolbar,.tool-btn,footer,
+  .page-border,.tabs,.btn-refresh,.btn-analyze,.error{display:none!important;}
+  body{background:white!important;color:#000!important;font-size:12pt;}
+  [data-theme="dark"] body{background:white!important;color:#000!important;}
+  #result{display:block!important;}
+  .poem-card,.tab-content,.bio-card,.input-card{box-shadow:none!important;border:1px solid #ddd!important;break-inside:avoid;}
+  .panel{display:block!important;margin-bottom:24pt;}
+  .panel-title{color:#C8860A!important;border-bottom:1px solid #ddd!important;}
+  .tab-content{border:none!important;padding:0!important;}
+  main{max-width:100%!important;padding:0 16pt!important;}
+  header{padding:16pt 0 12pt!important;}
+  h1{font-size:24pt!important;}
+  .message-block{border-left:3px solid #E8500A!important;background:#fffbf5!important;}
+  .device{background:#f9f5ee!important;}
+  .question{background:#f9f5ee!important;border:1px solid #ddd!important;}
+  .input-card{display:none!important;}
+  .bio-card{border:1px solid #ddd!important;break-inside:avoid;}
+  .bio-photo{width:100px!important;height:100px!important;border-radius:8px!important;}
+}
+
+@media(max-width:600px){
+  header{padding:76px 16px 40px;}
+  .input-card,.tab-content,.poem-card{padding:18px 16px;}
+  .tab{padding:10px 14px;font-size:0.8rem;}
+  .btn-row{flex-direction:column;}
+  .btn-refresh{justify-content:center;}
+  .topbar-brand{display:block;}
+  h1{font-size:2rem;}
+  .bio-card{flex-direction:column;align-items:center;text-align:center;}
+}
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topbar">
+  <div class="topbar-left">
+    <button class="recents-trigger" onclick="openDrawer()">
+      🕐 Recents <span class="recents-count" id="recentsCount">0</span>
+    </button>
+    <span class="topbar-brand">काव्य-विश्लेषक</span>
+  </div>
+  <div class="topbar-right">
+    <button class="icon-btn" onclick="toggleDark()" id="darkBtn">🌙 Dark</button>
+    <button class="icon-btn" onclick="printPage()">🖨 Print</button>
+    <button class="icon-btn" onclick="shareResult()" id="shareBtn">🔗 Share</button>
+  </div>
+</nav>
+
+<!-- DRAWER OVERLAY -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+
+<!-- RECENTS DRAWER -->
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div class="drawer-title">🕐 Recents</div>
+    <button class="drawer-back" onclick="closeDrawer()">← Back</button>
+  </div>
+  <div class="drawer-actions">
+    <button class="clear-btn" onclick="clearRecents()">🗑 Clear All</button>
+  </div>
+  <div class="drawer-list" id="drawerList"></div>
+</div>
+
+<!-- PAGE BORDER DECO -->
+<div style="position:fixed;inset:0;border:1px solid rgba(200,134,10,0.12);pointer-events:none;z-index:100;margin:8px;border-radius:4px;"></div>
+
+<header>
+  <span class="header-ornament">🪔</span>
+  <h1>काव्य<em>-</em>विश्लेषक</h1>
+  <p class="tagline">Hindi &amp; Marathi Poem Analyzer</p>
+  <div class="header-divider"><span>✦</span></div>
+</header>
+
+<main>
+  <!-- INPUT -->
+  <div class="input-card">
+    <label class="input-label">✍️ अपनी कविता यहाँ लिखें / इथे कविता लिहा</label>
+    <textarea id="poem" placeholder="यहाँ हिंदी या मराठी कविता पेस्ट करें...&#10;इथे हिंदी किंवा मराठी कविता टाका..."></textarea>
+    <div class="btn-row">
+      <button class="btn-analyze" id="btn" onclick="analyze()">🔍 कविता विश्लेषण करें / विश्लेषण करा</button>
+      <button class="btn-refresh" id="refreshBtn" onclick="resetPage()">↺ Refresh</button>
+    </div>
+  </div>
+
+  <div class="error" id="err"></div>
+
+  <!-- RESULT -->
+  <div id="result" style="display:none">
+
+    <!-- RESULT TOOLBAR -->
+    <div class="result-toolbar">
+      <span class="result-toolbar-title" id="r-toolbar-title"></span>
+      <button class="tool-btn" onclick="copyAll()" id="copyBtn">📋 Copy Analysis</button>
+      <button class="tool-btn" onclick="printPage()">🖨 Print / PDF</button>
+      <button class="tool-btn" onclick="shareResult()">🔗 Share</button>
+    </div>
+
+    <!-- POEM INFO -->
+    <div class="poem-card">
+      <div class="poem-info"><div class="info-label">कविता शीर्षक</div><div class="info-value" id="r-title"></div></div>
+      <div class="poem-info"><div class="info-label">कवी / कवि</div><div class="info-value sm" id="r-poet"></div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px;">
+        <span class="badge" id="r-lang"></span>
+        <span class="badge badge-mood" id="r-mood"></span>
+      </div>
+    </div>
+
+    <!-- POET BIO -->
+    <div class="bio-card" id="bioCard" style="display:none">
+      <div id="bioPhotoWrap"></div>
+      <div class="bio-content">
+        <div class="bio-name" id="bio-name"></div>
+        <div class="bio-text" id="bio-text"></div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs-wrap">
+      <div class="tabs">
+        <button class="tab active" onclick="tab('summary',this)">📖 सारांश</button>
+        <button class="tab" onclick="tab('message',this)">💡 संदेश</button>
+        <button class="tab" onclick="tab('literary',this)">🎭 काव्य-विश्लेषण</button>
+        <button class="tab" onclick="tab('exam',this)">📝 परीक्षा प्रश्न</button>
+      </div>
+    </div>
+
+    <div class="tab-content">
+      <div class="panel active" id="p-summary">
+        <div class="panel-title">
+          <span>📖 कविता का सारांश / कवितेचा सारांश</span>
+          <button class="tool-btn" onclick="copyPanel('r-summary')">📋 Copy</button>
+        </div>
+        <div id="r-summary"></div>
+        <div class="themes" id="r-themes"></div>
+      </div>
+      <div class="panel" id="p-message">
+        <div class="panel-title">
+          <span>💡 कवि का संदेश / कवीचा संदेश</span>
+          <button class="tool-btn" onclick="copyPanel('r-message')">📋 Copy</button>
+        </div>
+        <div class="message-block"><div id="r-message"></div></div>
+      </div>
+      <div class="panel" id="p-literary">
+        <div class="panel-title"><span>🎭 काव्य-अलंकार / Literary Devices</span></div>
+        <div id="r-devices"></div>
+      </div>
+      <div class="panel" id="p-exam">
+        <div class="panel-title">
+          <span>📝 परीक्षा के संभावित प्रश्न</span>
+          <button class="tool-btn" onclick="copyPanel('r-questions')">📋 Copy</button>
+        </div>
+        <div id="r-questions"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>🪔 काव्य-विश्लेषक &nbsp;·&nbsp; Hindi &amp; Marathi Poem Analyzer &nbsp;·&nbsp; Powered by Google Gemini</footer>
+
+<script>
+const API_KEY = 'AIzaSyCxYFx_TaxK1CGOcu7upnaXHCT35Tblgis';
+const MAX_RECENTS = 10;
+let currentResult = null;
+
+const PROMPT = `You are an expert literary scholar specializing in Hindi and Marathi poetry.
+Analyze the poem and respond ONLY with raw valid JSON (no markdown, no backticks, no extra text):
+{
+  "title": "poem title or अज्ञात",
+  "poet": "Carefully identify the poet by analyzing style, language, themes and signature clues. Search your knowledge for well-known poems. Provide exact poet name if known, else अज्ञात कवी",
+  "language": "Hindi or Marathi",
+  "summary": "Write a detailed summary in 3-4 full paragraphs in the same language as the poem. Each paragraph must be 4-5 sentences. Cover meaning of each stanza, emotions, imagery, and overall flow. Separate paragraphs with newline.",
+  "poetMessage": "Write a detailed explanation in 3-4 full paragraphs in the same language as the poem. Each paragraph 4-5 sentences. Explain deeper philosophical/social message, context, and relevance today. Separate paragraphs with newline.",
+  "poetBio": "Write a 3-4 sentence biography of the poet in the SAME language as the poem (Hindi or Marathi). Include birth/death years, major works, literary style, and contribution to literature. If the poem is in Marathi write bio in Marathi. If the poem is in Hindi write bio in Hindi. If poet is unknown write N/A.",
+  "poetNameEnglish": "The poet's name written in English/Roman script for Wikipedia search. Example: Kusumagraj, Kabir Das, Mirabai. If unknown write N/A.",
+  "themes": ["theme1","theme2","theme3"],
+  "literaryDevices": ["अलंकार name: explanation","अलंकार name: explanation","अलंकार name: explanation"],
+  "mood": "emotional tone in 2-3 words",
+  "examQuestions": [
+    {"type":"Short Answer","question":"question text","hint":"brief hint"},
+    {"type":"Long Answer","question":"question text","hint":"brief hint"},
+    {"type":"MCQ","question":"question text","options":["A) option","B) option","C) option","D) option"],"answer":"A"},
+    {"type":"Short Answer","question":"question text","hint":"brief hint"},
+    {"type":"Long Answer","question":"question text","hint":"brief hint"},
+    {"type":"MCQ","question":"question text","options":["A) option","B) option","C) option","D) option"],"answer":"B"}
+  ]
+}`;
+
+// ── DARK MODE ────────────────────────────────────────────
+function toggleDark() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  const btn = document.getElementById('darkBtn');
+  btn.textContent = isDark ? '🌙 Dark' : '☀️ Light';
+  btn.classList.toggle('active', !isDark);
+  localStorage.setItem('kavya_theme', isDark ? 'light' : 'dark');
+}
+
+// ── PRINT ────────────────────────────────────────────────
+function printPage() {
+  if (!currentResult) { alert('Please analyze a poem first.'); return; }
+  const r = currentResult;
+
+  // Build themes HTML
+  const themes = (r.themes||[]).map(t=>`<span style="display:inline-block;background:#f5e6c8;border:1px solid #C8860A;border-radius:4px;padding:3px 12px;font-size:0.82rem;color:#C8860A;margin:3px">${t}</span>`).join('');
+
+  // Build summary paragraphs
+  const summary = (r.summary||'').split('\n').filter(p=>p.trim()).map(p=>`<p style="margin-bottom:14px;line-height:2">${p}</p>`).join('');
+  const message = (r.poetMessage||'').split('\n').filter(p=>p.trim()).map(p=>`<p style="margin-bottom:14px;line-height:2;font-style:italic">${p}</p>`).join('');
+
+  // Build devices
+  const devices = (r.literaryDevices||[]).map((d,i)=>`<div style="padding:12px 16px;margin-bottom:8px;background:#fdf6e9;border-left:3px solid ${i%2===0?'#E8500A':'#C8860A'};border-radius:0 6px 6px 0">${d}</div>`).join('');
+
+  // Build questions
+  const questions = (r.examQuestions||[]).map((q,i)=>{
+    const color = q.type==='MCQ'?'#27ae60':q.type==='Long Answer'?'#E8500A':'#C8860A';
+    const opts = q.options ? q.options.map(o=>`<div style="padding:3px 0;color:${o.charAt(0)===q.answer?'#27ae60':'#555'};font-weight:${o.charAt(0)===q.answer?'700':'400'}">${o.charAt(0)===q.answer?'✓ ':''}${o}</div>`).join('') : '';
+    const hint = q.hint ? `<div style="background:#fffbf0;border:1px solid #C8860A33;border-radius:5px;padding:8px 12px;font-size:0.8rem;color:#C8860A;margin-top:6px">💭 ${q.hint}</div>` : '';
+    return `<div style="background:#fdf6e9;border-radius:8px;padding:16px;margin-bottom:12px;border:1px solid #e8d5a0">
+      <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px">
+        <span style="border-radius:4px;padding:2px 8px;font-size:0.65rem;letter-spacing:1px;text-transform:uppercase;font-weight:700;border:1px solid ${color};color:${color};flex-shrink:0;margin-top:2px">${q.type}</span>
+        <span style="font-weight:700;line-height:1.6">Q${i+1}. ${q.question}</span>
+      </div>
+      ${opts}${hint}
+    </div>`;
+  }).join('');
+
+  // Bio section
+  const bioImg = document.querySelector('.bio-photo');
+  const bioImgHtml = bioImg ? `<img src="${bioImg.src}" style="width:100px;height:100px;border-radius:8px;object-fit:cover;object-position:top;border:2px solid #C8860A;flex-shrink:0">` : `<div style="width:80px;height:80px;border-radius:8px;background:#f5e6c8;display:flex;align-items:center;justify-content:center;font-size:2rem;flex-shrink:0">👤</div>`;
+  const bioHtml = (r.poetBio && r.poetBio !== 'N/A') ? `
+    <div style="background:#fffbf0;border:1px solid #e8d5a0;border-radius:10px;padding:18px 20px;margin-bottom:20px;display:flex;gap:18px;align-items:flex-start">
+      ${bioImgHtml}
+      <div>
+        <div style="font-family:'Playfair Display',Georgia,serif;font-size:1.05rem;font-weight:700;color:#1C0A00;margin-bottom:6px">${r.poet}</div>
+        <div style="font-size:0.88rem;line-height:1.8;color:#555">${r.poetBio}</div>
+      </div>
+    </div>` : '';
+
+  const langColor = r.language==='Hindi' ? '#E8500A' : '#C8860A';
+
+  const html = `<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8"/>
+<title>काव्य-विश्लेषक — ${r.title}</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Tiro+Devanagari+Hindi&display=swap" rel="stylesheet"/>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Tiro Devanagari Hindi',Georgia,serif;color:#1C0A00;background:white;padding:32px 40px;font-size:11pt;line-height:1.6}
+  h2{font-family:'Playfair Display',Georgia,serif;font-size:1rem;color:#C8860A;margin:20px 0 10px;padding-bottom:8px;border-bottom:1px solid #e8d5a0}
+  @media print{body{padding:16px 20px}@page{margin:1.5cm}}
+</style>
+</head><body>
+  <div style="text-align:center;padding-bottom:20px;border-bottom:2px solid #e8d5a0;margin-bottom:24px">
+    <div style="font-size:1.6rem;margin-bottom:4px">🪔</div>
+    <div style="font-family:'Playfair Display',Georgia,serif;font-size:2rem;font-weight:900;color:#1C0A00">काव्य-विश्लेषक</div>
+    <div style="font-size:0.75rem;color:#C8860A;letter-spacing:3px;text-transform:uppercase;margin-top:4px">Hindi & Marathi Poem Analyzer</div>
+  </div>
+
+  <div style="background:linear-gradient(135deg,#fffbf0,#fff8e8);border:1px solid #e8d5a0;border-radius:10px;padding:20px 24px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:20px;align-items:center">
+    <div style="flex:1;min-width:140px"><div style="font-size:0.65rem;letter-spacing:2px;text-transform:uppercase;color:#C8860A;margin-bottom:4px;font-family:Arial,sans-serif">कविता शीर्षक</div><div style="font-family:'Playfair Display',Georgia,serif;font-size:1.2rem;font-weight:700">${r.title}</div></div>
+    <div style="flex:1;min-width:140px"><div style="font-size:0.65rem;letter-spacing:2px;text-transform:uppercase;color:#C8860A;margin-bottom:4px;font-family:Arial,sans-serif">कवी / कवि</div><div style="font-size:0.95rem">${r.poet}</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <span style="border-radius:4px;padding:4px 12px;font-size:0.72rem;letter-spacing:1px;text-transform:uppercase;font-family:Arial,sans-serif;font-weight:700;background:${langColor}18;border:1px solid ${langColor};color:${langColor}">${r.language}</span>
+      <span style="border-radius:4px;padding:4px 12px;font-size:0.7rem;font-family:Arial,sans-serif;background:#f5f5f5;border:1px solid #ddd;color:#555">🎵 ${r.mood}</span>
+    </div>
+  </div>
+
+  ${bioHtml}
+
+  <h2>📖 कविता का सारांश / कवितेचा सारांश</h2>
+  <div style="margin-bottom:12px">${summary}</div>
+  <div style="margin-bottom:20px">${themes}</div>
+
+  <h2>💡 कवि का संदेश / कवीचा संदेश</h2>
+  <div style="border-left:3px solid #E8500A;padding:14px 18px;background:#fffbf5;border-radius:0 8px 8px 0;margin-bottom:20px">${message}</div>
+
+  <h2>🎭 काव्य-अलंकार / Literary Devices</h2>
+  <div style="margin-bottom:20px">${devices}</div>
+
+  <h2>📝 परीक्षा के संभावित प्रश्न</h2>
+  <div>${questions}</div>
+
+  <div style="text-align:center;margin-top:30px;padding-top:16px;border-top:1px solid #e8d5a0;color:#aaa;font-size:0.75rem;font-family:Arial,sans-serif">🪔 काव्य-विश्लेषक · Powered by Google Gemini</div>
+
+  <script>window.onload = function(){ window.print(); window.onafterprint = function(){ window.close(); }; }<\/script>
+</body></html>`;
+
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+}
+
+// ── SHARE ────────────────────────────────────────────────
+function shareResult() {
+  const url = window.location.href;
+  if (navigator.share) {
+    navigator.share({ title: 'काव्य-विश्लेषक', text: '📖 Check out this poem analysis!', url });
+  } else {
+    navigator.clipboard.writeText(url).then(() => {
+      const btn = document.getElementById('shareBtn');
+      const orig = btn.textContent;
+      btn.textContent = '✅ Link Copied!';
+      setTimeout(() => btn.textContent = orig, 2000);
+    });
+  }
+}
+
+// ── COPY ─────────────────────────────────────────────────
+function copyPanel(id) {
+  const el = document.getElementById(id);
+  const text = el ? el.innerText : '';
+  navigator.clipboard.writeText(text).then(() => {
+    showCopyFeedback(event.currentTarget);
+  });
+}
+
+function copyAll() {
+  if (!currentResult) return;
+  const r = currentResult;
+  const text = `काव्य-विश्लेषक Analysis\n${'='.repeat(40)}\n\nTitle: ${r.title}\nPoet: ${r.poet}\nLanguage: ${r.language}\nMood: ${r.mood}\n\nSARAANSH (Summary):\n${r.summary}\n\nSANDESH (Message):\n${r.poetMessage}\n\nThemes: ${(r.themes||[]).join(', ')}\n\nLiterary Devices:\n${(r.literaryDevices||[]).join('\n')}\n\nExam Questions:\n${(r.examQuestions||[]).map((q,i)=>`Q${i+1}. [${q.type}] ${q.question}`).join('\n')}`;
+  navigator.clipboard.writeText(text).then(() => {
+    showCopyFeedback(document.getElementById('copyBtn'));
+  });
+}
+
+function showCopyFeedback(btn) {
+  const orig = btn.innerHTML;
+  btn.innerHTML = '✅ Copied!';
+  btn.classList.add('copied');
+  setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('copied'); }, 2000);
+}
+
+// ── DRAWER ───────────────────────────────────────────────
+function openDrawer() {
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawerOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ── RECENTS ──────────────────────────────────────────────
+function getRecents() {
+  try { return JSON.parse(localStorage.getItem('kavya_recents') || '[]'); } catch(e) { return []; }
+}
+
+function saveToRecents(r, poemText) {
+  let recents = getRecents();
+  const entry = { id: Date.now(), title: r.title, poet: r.poet, language: r.language, poem: poemText, date: new Date().toLocaleDateString('en-IN'), data: r };
+  recents = recents.filter(x => x.title !== r.title);
+  recents.unshift(entry);
+  if (recents.length > MAX_RECENTS) recents = recents.slice(0, MAX_RECENTS);
+  localStorage.setItem('kavya_recents', JSON.stringify(recents));
+  renderRecents();
+}
+
+function renderRecents() {
+  const recents = getRecents();
+  document.getElementById('recentsCount').textContent = recents.length;
+  const list = document.getElementById('drawerList');
+  if (!recents.length) { list.innerHTML = '<div class="no-recents">No poems analyzed yet.<br/>अभी तक कोई कविता नहीं।</div>'; return; }
+  list.innerHTML = recents.map((item, i) => `
+    <div class="recent-item" onclick="loadRecent(${i})">
+      <div class="recent-info">
+        <div class="recent-title">${item.title}</div>
+        <div class="recent-meta">${item.poet} · ${item.date}</div>
+      </div>
+      <span class="badge recent-badge ${item.language==='Hindi'?'badge-hindi':'badge-marathi'}">${item.language}</span>
+      <span class="recent-arrow">›</span>
+    </div>`).join('');
+}
+
+function loadRecent(i) {
+  const item = getRecents()[i];
+  if (!item) return;
+  closeDrawer();
+  document.getElementById('poem').value = item.poem;
+  render(item.data);
+  document.getElementById('refreshBtn').style.display = 'flex';
+  setTimeout(() => document.getElementById('result').scrollIntoView({behavior:'smooth'}), 400);
+}
+
+function clearRecents() {
+  if (!confirm('Clear all recents?')) return;
+  localStorage.removeItem('kavya_recents');
+  renderRecents();
+}
+
+// ── RESET ────────────────────────────────────────────────
+function resetPage() {
+  document.getElementById('poem').value = '';
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('err').style.display = 'none';
+  document.getElementById('refreshBtn').style.display = 'none';
+  currentResult = null;
+  document.getElementById('poem').focus();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// ── TABS ─────────────────────────────────────────────────
+function tab(name, el) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('p-'+name).classList.add('active');
+  el.classList.add('active');
+}
+
+// ── ANALYZE ──────────────────────────────────────────────
+async function analyze() {
+  const poem = document.getElementById('poem').value.trim();
+  const btn = document.getElementById('btn');
+  if (!poem) { showErr('कविता दर्ज करें / Please enter a poem'); return; }
+  document.getElementById('err').style.display = 'none';
+  document.getElementById('result').style.display = 'none';
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> विश्लेषण हो रहा है...';
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
+      { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ contents:[{parts:[{text:PROMPT+'\n\nPoem:\n\n'+poem}]}], generationConfig:{temperature:0.2,maxOutputTokens:8192}, tools:[{googleSearch:{}}] }) }
+    );
+    if (!res.ok) { const e=await res.json().catch(()=>({})); throw new Error('Error '+res.status+': '+(e?.error?.message||JSON.stringify(e))); }
+    const data = await res.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text||'';
+    const clean = text.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/i,'').trim();
+    let parsed; try { parsed=JSON.parse(clean); } catch(pe) { throw new Error('Could not read response. Please try again.'); }
+    render(parsed);
+    saveToRecents(parsed, poem);
+    document.getElementById('refreshBtn').style.display = 'flex';
+  } catch(e) { showErr(e.message); }
+  finally { btn.disabled=false; btn.innerHTML='🔍 कविता विश्लेषण करें / विश्लेषण करा'; }
+}
+
+function showErr(msg) { const e=document.getElementById('err'); e.textContent='❌ '+msg; e.style.display='block'; }
+
+// ── RENDER ───────────────────────────────────────────────
+function render(r) {
+  currentResult = r;
+  document.getElementById('r-title').textContent = r.title||'';
+  document.getElementById('r-poet').textContent = r.poet||'';
+  document.getElementById('r-toolbar-title').textContent = r.title || '';
+  const lang = document.getElementById('r-lang');
+  lang.textContent = r.language||''; lang.className='badge '+(r.language==='Hindi'?'badge-hindi':'badge-marathi');
+  document.getElementById('r-mood').textContent = r.mood?'🎵 '+r.mood:'';
+
+  // Poet Bio
+  const bioCard = document.getElementById('bioCard');
+  if (r.poetBio && r.poetBio !== 'N/A' && r.poet && r.poet !== 'अज्ञात कवी') {
+    document.getElementById('bio-name').textContent = r.poet;
+    document.getElementById('bio-text').textContent = r.poetBio;
+    const photoWrap = document.getElementById('bioPhotoWrap');
+    photoWrap.innerHTML = `<div class="bio-photo-placeholder" id="bioPhotoPlaceholder">👤</div>`;
+    if (r.poet && r.poet !== 'अज्ञात कवी') {
+      fetchPoetPhoto(r.poetNameEnglish && r.poetNameEnglish !== "N/A" ? r.poetNameEnglish : r.poet);
+    }
+    bioCard.style.display = 'flex';
+  } else { bioCard.style.display = 'none'; }
+
+  document.getElementById('r-summary').innerHTML = (r.summary||'').split('\n').filter(p=>p.trim()).map(p=>`<p style="margin-bottom:16px;line-height:2">${p}</p>`).join('');
+  document.getElementById('r-message').innerHTML = (r.poetMessage||'').split('\n').filter(p=>p.trim()).map(p=>`<p style="margin-bottom:16px;line-height:2;font-style:italic">${p}</p>`).join('');
+  document.getElementById('r-themes').innerHTML = (r.themes||[]).map(t=>`<span class="theme">${t}</span>`).join('');
+  document.getElementById('r-devices').innerHTML = (r.literaryDevices||[]).map(d=>`<div class="device">${d}</div>`).join('');
+  document.getElementById('r-questions').innerHTML = (r.examQuestions||[]).map((q,i)=>{
+    const tc=q.type==='MCQ'?'qtype-mcq':q.type==='Long Answer'?'qtype-la':'qtype-sa';
+    const opts=q.options?`<div class="options">${q.options.map(o=>`<div class="option ${o.charAt(0)===q.answer?'correct':''}">${o.charAt(0)===q.answer?'✓ ':''}${o}</div>`).join('')}</div>`:'';
+    const hint=q.hint?`<div class="hint">💭 ${q.hint}</div>`:'';
+    return `<div class="question"><div class="q-head"><span class="qtype ${tc}">${q.type}</span><span class="qtext">Q${i+1}. ${q.question}</span></div>${opts}${hint}</div>`;
+  }).join('');
+
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('p-summary').classList.add('active');
+  document.querySelectorAll('.tab')[0].classList.add('active');
+  document.getElementById('result').style.display='block';
+  document.getElementById('result').scrollIntoView({behavior:'smooth'});
+}
+
+// ── POET PHOTO ───────────────────────────────────────────
+async function fetchPoetPhoto(poetName) {
+  const clean = poetName.replace(/[()।]/g,'').trim();
+
+  function setPhoto(url) {
+    const el = document.getElementById('bioPhotoPlaceholder');
+    if (!el) return;
+    const img = document.createElement('img');
+    img.className = 'bio-photo';
+    img.src = url;
+    img.alt = poetName;
+    img.onerror = () => img.remove();
+    el.replaceWith(img);
+  }
+
+  // Get photo from Wikipedia by exact page title
+  async function photoByTitle(lang, title) {
+    try {
+      const r = await fetch(`https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=pageimages&format=json&pithumbsize=400&origin=*`);
+      const d = await r.json();
+      const page = Object.values(d.query.pages)[0];
+      return (page?.thumbnail?.source) || null;
+    } catch(e) { return null; }
+  }
+
+  // Search Wikipedia and return best matching page title
+  async function searchTitle(lang, query) {
+    try {
+      const r = await fetch(`https://${lang}.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=3&format=json&origin=*`);
+      const d = await r.json();
+      return d[1] || []; // array of titles
+    } catch(e) { return []; }
+  }
+
+  try {
+    // Try each language wiki
+    for (const lang of ['en','hi','mr']) {
+      // 1. Direct title
+      let photo = await photoByTitle(lang, clean);
+      if (photo) { setPhoto(photo); return; }
+
+      // 2. Search and try top 3 results
+      const titles = await searchTitle(lang, clean);
+      for (const title of titles) {
+        photo = await photoByTitle(lang, title);
+        if (photo) { setPhoto(photo); return; }
+      }
+    }
+
+    // 3. Try with "poet" appended in English
+    const titlesWithPoet = await searchTitle('en', clean + ' Indian poet');
+    for (const title of titlesWithPoet) {
+      const photo = await photoByTitle('en', title);
+      if (photo) { setPhoto(photo); return; }
+    }
+  } catch(e) { /* silently fail */ }
+}
+
+// ── INIT ─────────────────────────────────────────────────
+const savedTheme = localStorage.getItem('kavya_theme') || 'light';
+document.documentElement.setAttribute('data-theme', savedTheme);
+if (savedTheme === 'dark') { document.getElementById('darkBtn').textContent = '☀️ Light'; document.getElementById('darkBtn').classList.add('active'); }
+renderRecents();
+</script>
+</body>
+</html>
